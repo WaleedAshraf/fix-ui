@@ -1,0 +1,22 @@
+{
+  "name": "Fix UI",
+  "version": "1.0.0",
+  "description": "Fix small UI issues for different sites.",
+  "manifest_version": 3,
+  "optional_host_permissions": [
+    "https://x.com/home*",
+    "https://twitter.com/home"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/home*",
+        "https://twitter.com/home"
+      ],
+      "js": [
+        "contentScript.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
