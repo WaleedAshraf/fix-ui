@@ -1,4 +1,4 @@
-const twitterHots = ['twitter.com', 'x.com']
+const twitterHosts = ['twitter.com', 'x.com']
 const twitterPaths = ['/home']
 const windowURL = new URL(window.location.href)
 
@@ -12,62 +12,86 @@ function getOS() {
   return 'unknown'
 }
 
-function applyCustomClass() {
-  if (!twitterHots.includes(windowURL.hostname) || !twitterPaths.includes(windowURL.pathname)) return
-
+function createCustomStyles() {
   const os = getOS()
   const style = document.createElement('style')
   style.type = 'text/css'
 
   if (os === 'macos') {
     style.innerHTML = `
-          .custom-urdu-font-macos {
-              font-size: 15px !important;
-              font-family: 'Noto Nastaliq Urdu', serif !important;
-              line-height: 1.9 !important;
-          }
-      `
+      .custom-urdu-font {
+        font-size: 15px !important;
+        font-family: 'Noto Nastaliq Urdu', serif !important;
+        line-height: 1.9 !important;
+      }
+    `
   } else if (os === 'windows') {
     style.innerHTML = `
-          .custom-urdu-font-windows {
-              font-size: 16px !important;
-              line-height: 1.5 !important;
-          }
-      `
+      .custom-urdu-font {
+        font-size: 16px !important;
+        line-height: 1.5 !important;
+      }
+    `
   }
 
   document.head.appendChild(style)
+}
 
+function applyCustomClass() {
   const urduElements = document.querySelectorAll('[lang="ur"]')
   urduElements.forEach(element => {
-    if (os === 'macos') {
-      element.classList.add('custom-urdu-font-macos')
-    } else if (os === 'windows') {
-      element.classList.add('custom-urdu-font-windows')
-    }
+    element.classList.add('custom-urdu-font')
   })
 }
 
-// MutationObserver to monitor for new tweets being added to the DOM
-const observer = new MutationObserver(mutations => {
-  mutations.forEach(mutation => {
-    if (mutation.addedNodes.length > 0) {
-      applyCustomClass()
-    }
+function startObserving(targetNode, observer, config) {
+  if (targetNode) {
+    observer.observe(targetNode, config)
+    applyCustomClass()
+  } else {
+    targetNode = document.querySelector('div[aria-label="Timeline: Your Home Timeline"]')
+    setTimeout(() => startObserving(targetNode, observer, config), 500)
+  }
+}
+
+function initializeObserverAndListeners() {
+  const config = { childList: true, subtree: true }
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      if (mutation.addedNodes.length > 0) {
+        applyCustomClass()
+      }
+    })
   })
-})
 
-// Configuration for the observer
-const config = {
-  childList: true,
-  subtree: true
+  const checkAndObserve = () => {
+    const targetNode = document.querySelector('div[aria-label="Timeline: Your Home Timeline"]')
+    startObserving(targetNode, observer, config)
+  }
+
+  checkAndObserve()
+
+  const addClickListeners = () => {
+    const tabsAndLists = document.querySelectorAll('[role="presentation"] a')
+    if (tabsAndLists.length > 3) {
+      tabsAndLists.forEach(element => {
+        element.addEventListener('click', () => {
+          setTimeout(() => {
+            applyCustomClass()
+            checkAndObserve()
+          }, 500)
+        })
+      })
+    } else {
+      setTimeout(addClickListeners, 500)
+    }
+  }
+
+  addClickListeners()
 }
 
-// Start observing the main feed for changes
-const targetNode = document.querySelector('div[aria-label="Timeline: Your Home Timeline"]')
-if (targetNode) {
-  observer.observe(targetNode, config)
+window.onload = () => {
+  createCustomStyles()
+  initializeObserverAndListeners()
 }
-
-// Apply the custom class to any existing tweets
-applyCustomClass()
